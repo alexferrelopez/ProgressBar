@@ -27,70 +27,90 @@ import javax.swing.event.ChangeListener;
 
 public class Test {
 
-    public class EJSlider extends JSlider {
-
-        private EJSlider(int i, int i1) {
-            super(i,i1);
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    Point p = e.getPoint();
-                    double percent = p.x / ((double) getWidth());
-                    int range = getMaximum() - getMinimum();
-                    double newVal = range * percent;
-                    int result = (int)(getMinimum() + newVal);
-                    setValue(result);
-                }
-            });
-        }
-
-
-    }
+    private boolean mousePressed;
 
     public static void main(String[] args) {
         new Test();
     }
 
     public Test() {
-        EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
-                    ex.printStackTrace();
-                }
-
-                JFrame frame = new JFrame("Testing");
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                frame.add(new TestPane());
-                frame.pack();
-                frame.setLocationRelativeTo(null);
-                frame.setVisible(true);
+        EventQueue.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
+                ex.printStackTrace();
             }
+
+            JFrame frame = new JFrame("Testing");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.add(new TestPane());
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+
+
         });
     }
 
     public class TestPane extends JPanel {
 
+        public class EJSlider extends JSlider {
+
+            public EJSlider(int i, int i1) {
+                super(i,i1);
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                        mousePressed = true;
+                        Point p = e.getPoint();
+                        double percent = p.x / ((double) getWidth());
+                        int range = getMaximum() - getMinimum();
+                        double newVal = range * percent;
+                        int result = (int)(getMinimum() + newVal);
+                        setValue(result);
+                        int frame = getDesiredFrame();
+                        if (frame >= frameCount) {
+                            frame = 0;
+                        }
+                        clip.setFramePosition(frame);
+                        mousePressed = false;
+                    }
+
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                        mousePressed = true;
+                        Point p = e.getPoint();
+                        double percent = p.x / ((double) getWidth());
+                        int range = getMaximum() - getMinimum();
+                        double newVal = range * percent;
+                        int result = (int)(getMinimum() + newVal);
+                        setValue(result);
+                        int frame = getDesiredFrame();
+                        if (frame >= frameCount) {
+                            frame = 0;
+                        }
+                        clip.setFramePosition(frame);
+                        mousePressed = false;
+                    }
+                });
+            }
+
+
+        }
+
         private final EJSlider slider = new EJSlider(0, 100);
         private long frameCount;
         private double duration;
-
         private AudioFormat format;
         private Clip clip;
-
-        private JLabel currentFrame;
-        private JLabel currentDuration;
-
+        private final JLabel currentFrame;
+        private final JLabel currentDuration;
         private boolean playing = false;
-
-        private Timer playTimer;
-
-        private boolean ignoreStateChange = false;
+        private final Timer playTimer;
+        //private boolean ignoreStateChange = false;
 
         public TestPane() {
-            AudioInputStream ais = null;
+            AudioInputStream ais;
             try {
                 File file = new File("./files/file_example_WAV_10MG.wav");
                 ais = AudioSystem.getAudioInputStream(file);
@@ -103,9 +123,11 @@ public class Test {
             } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
                 ex.printStackTrace();
             }
+            this.setBackground(Color.darkGray);
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.gridwidth = GridBagConstraints.REMAINDER;
             setLayout(new GridBagLayout());
+            slider.setBackground(Color.darkGray);
             add(slider, gbc);
             slider.setValue(0);
 
@@ -119,6 +141,7 @@ public class Test {
             add(currentDuration, gbc);
 
             JButton action = new JButton("Play");
+            action.setBackground(Color.darkGray);
             action.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -156,52 +179,45 @@ public class Test {
 
             add(action, gbc);
 
-            playTimer = new Timer(100, new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+            playTimer = new Timer(100, e -> {
+                if (!mousePressed) {
                     updateState();
                 }
             });
 
-            Timer delayedUpdate = new Timer(250, new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    int frame = getDesiredFrame();
-                    clip.setFramePosition(frame);
+            /*Timer delayedUpdate = new Timer(250, e -> {
+                int frame = getDesiredFrame();
+                clip.setFramePosition(frame);
 
-                    double time = getCurrentTime();
+                double time = getCurrentTime();
 
-                    currentFrame.setText("Current frame: " + frame);
-                    currentDuration.setText("Current duration: " + time);
+                currentFrame.setText("Current frame: " + frame);
+                currentDuration.setText("Current duration: " + time);
 
-                }
             });
             delayedUpdate.setRepeats(false);
-            slider.addChangeListener(new ChangeListener() {
-                @Override
-                public void stateChanged(ChangeEvent e) {
-                    if (ignoreStateChange) {
-                        return;
-                    }
-                    delayedUpdate.restart();
+            slider.addChangeListener(e -> {
+                if (ignoreStateChange) {
+                    return;
                 }
-            });
+                delayedUpdate.restart();
+            });*/
         }
 
         public void updateState() {
-            ignoreStateChange = true;
+            //ignoreStateChange = true;
             int frame = clip.getFramePosition();
             int progress = (int) (((double) frame / (double) frameCount) * 100);
             slider.setValue(progress);
+
             currentFrame.setText("Current frame: " + getDesiredFrame());
             currentDuration.setText("Current duration: " + getCurrentTime());
-            ignoreStateChange = false;
+            //ignoreStateChange = false;
         }
 
         public double getCurrentTime() {
             int currentFrame = clip.getFramePosition();
-            double time = (double) currentFrame / format.getFrameRate();
-            return time;
+            return (double) currentFrame / format.getFrameRate();
         }
 
         public int getDesiredFrame() {
