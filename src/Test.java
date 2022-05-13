@@ -61,7 +61,6 @@ public class Test {
                 addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseReleased(MouseEvent e) {
-                        mousePressed = true;
                         Point p = e.getPoint();
                         double percent = p.x / ((double) getWidth());
                         int range = getMaximum() - getMinimum();
@@ -90,7 +89,6 @@ public class Test {
                             frame = 0;
                         }
                         clip.setFramePosition(frame);
-                        mousePressed = false;
                     }
                 });
             }
@@ -107,7 +105,6 @@ public class Test {
         private final JLabel currentDuration;
         private boolean playing = false;
         private final Timer playTimer;
-        //private boolean ignoreStateChange = false;
 
         public TestPane() {
             AudioInputStream ais;
@@ -184,35 +181,15 @@ public class Test {
                     updateState();
                 }
             });
-
-            /*Timer delayedUpdate = new Timer(250, e -> {
-                int frame = getDesiredFrame();
-                clip.setFramePosition(frame);
-
-                double time = getCurrentTime();
-
-                currentFrame.setText("Current frame: " + frame);
-                currentDuration.setText("Current duration: " + time);
-
-            });
-            delayedUpdate.setRepeats(false);
-            slider.addChangeListener(e -> {
-                if (ignoreStateChange) {
-                    return;
-                }
-                delayedUpdate.restart();
-            });*/
         }
 
         public void updateState() {
-            //ignoreStateChange = true;
             int frame = clip.getFramePosition();
             int progress = (int) (((double) frame / (double) frameCount) * 100);
             slider.setValue(progress);
 
             currentFrame.setText("Current frame: " + getDesiredFrame());
             currentDuration.setText("Current duration: " + getCurrentTime());
-            //ignoreStateChange = false;
         }
 
         public double getCurrentTime() {
